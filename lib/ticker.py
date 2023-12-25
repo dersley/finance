@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import yfinance as yf
 import datetime as dt
 
@@ -24,11 +23,22 @@ class Ticker:
 
         self.start_date = dt.datetime.today() - dt.timedelta(days=int(365 * years))
         self.yticker = yf.Ticker(ticker=code)
-        self.df = self.yticker.history(
+        self.df = self.build_ticker_df()
+        self.dist = self.fit_log_returns_dist()
+
+    def build_ticker_df(self):
+        df = self.yticker.history(
             start=self.start_date, end=dt.datetime.today(), interval="1d"
         )
 
-        self.dist = self.fit_log_returns_dist()
+        # Convert timestamp to standard timezone naive datetime
+        df.index = df.index.to_pydatetime()
+        df.index = df.index.tz_localize(None)
+
+        return df
+
+    def get_current_price(self):
+        return self.yticker.info.get("currentPrice")
 
     def get_log_returns(self):
         """
@@ -44,3 +54,19 @@ class Ticker:
         """
         returns_data = self.get_log_returns()
         return fit.fit_student_t(returns_data)
+
+    def simulate_returns(self, days: int, starting_balance: float, sims=1000):
+        """
+        Simulate returns for a given number of days from a starting balance
+
+        Returns an array of daily balances of shape (sims, days).
+        """
+
+        log_returns = np.zeros((days, sims))
+        for i in range(days):
+            log_returns[i, :] = self.dist.rvs(size=sims)
+
+        cum_returns = np.cumsum(log_returns, axis=0)
+        balance = starting_balance * np.exp(cum_returns.T)
+
+        return balance

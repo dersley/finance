@@ -4,6 +4,8 @@ import datetime as dt
 
 from .ticker import Ticker
 
+from .utils import simulation as sim
+
 
 class Portfolio:
     """
@@ -35,3 +37,19 @@ class Portfolio:
 
     def get_corr_matrix(self):
         return self.log_returns_df.corr()
+
+    def simulate_correlated_returns(self, sims=10_000):
+        uniform_samples = sim.simulate_correlated_uniform_samples(
+            num_elements=len(self.tickers),
+            corr_matrix=self.get_corr_matrix(),
+            sims=sims,
+        )
+
+        # Transpose to (num_tickers, sims)
+        uniform_samples = uniform_samples.T
+
+        simdata = np.zeros((len(self.tickers), sims))
+        for i, ticker in enumerate(self.tickers):
+            simdata[i, :] = ticker.dist.ppf(uniform_samples[i, :])
+
+        return simdata
