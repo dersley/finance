@@ -1,8 +1,9 @@
+import pandas as pd
 import numpy as np
 import yfinance as yf
 import datetime as dt
 
-from .utils import fitting as fit
+from .utils import fitting as fit, simulation as sim
 
 
 class Ticker:
@@ -37,8 +38,11 @@ class Ticker:
 
         return df
 
+    def get_company_name(self):
+        return self.yticker.info.get("longName")
+
     def get_current_price(self):
-        return self.yticker.info.get("currentPrice")
+        return self.df["Close"].iloc[-1]
 
     def get_log_returns(self):
         """
@@ -54,6 +58,11 @@ class Ticker:
         """
         returns_data = self.get_log_returns()
         return fit.fit_student_t(returns_data)
+
+    def calculate_autocorrelation(self, max_lag=60) -> pd.DataFrame:
+        log_returns = self.get_log_returns()
+        correlations = sim.calculate_lag_correlations(log_returns, max_lag=max_lag)
+        return correlations
 
     def simulate_returns(self, days: int, starting_balance: float, sims=1000):
         """

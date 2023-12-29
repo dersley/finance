@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import datetime as dt
 
 from lib.portfolio import Portfolio
-from app import static_plots as plot
-
+from lib.ticker import Ticker
+from lib.utils import helper as help
+from app import dynamic_plots as plot
 
 
 def main():
@@ -17,23 +18,15 @@ def main():
         "TLS": 10_000,
         "CBA": 10_000,
         "GOVT": 10_000,
+        "BEAR": 10_000,
     }
 
     portfolio = Portfolio(holdings_dict, years=years, asx=True)
+    test_ticker = Ticker("BEAR", years, asx=True)
+    start_date = dt.datetime(2020, 1, 1)
 
-    test_ticker = portfolio.tickers[4]
-
-    fig = plot.plot_returns_fit(test_ticker)
-    plt.show()
-
-    start_date = dt.datetime(2021, 1, 1)
-    fig = plot.plot_simulated_balance(
-        ticker=test_ticker,
-        start_date=start_date,
-        forecast_days=365,
-        sims=2500
-    )
-    plt.show()
+    fig = plot.plot_simulated_balance(test_ticker, start_date, 100)
+    fig.show()
 
 if __name__ == "__main__":
     main()

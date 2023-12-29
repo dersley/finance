@@ -83,3 +83,5 @@ AUS_OIL_AND_GAS = [
     "TER",  # Terracom Ltd
     "HZN",  # Horizon Oil Ltd
 ]
+
+AUS_INDEX_FUNDS = ["QUAL", "VAS", "BEAR"]

@@ -5,6 +5,7 @@ import pandas as pd
 import datetime as dt
 
 from lib.ticker import Ticker
+from lib.portfolio import Portfolio
 from lib.utils import fitting as fit
 from lib.utils import helper as help
 from app import plot_styles as ps
@@ -38,8 +39,13 @@ def plot_returns_fit(ticker: Ticker):
     return fig
 
 
-def plot_simulated_balance(ticker: Ticker, start_date: dt.datetime, forecast_days: int, starting_balance=None, sims=1000):
-    
+def plot_simulated_balance(
+    ticker: Ticker,
+    start_date: dt.datetime,
+    forecast_days: int,
+    starting_balance=None,
+    sims=1000,
+):
     if starting_balance is None:
         starting_balance = ticker.get_current_price()
 
@@ -55,13 +61,15 @@ def plot_simulated_balance(ticker: Ticker, start_date: dt.datetime, forecast_day
 
     # Create a continuous x-axis date range
     x_hist = historic_data.index
-    x_sim = pd.date_range(start=x_hist[-1] + pd.Timedelta(days=1), periods=forecast_days, freq='D')
+    x_sim = pd.date_range(
+        start=x_hist[-1] + pd.Timedelta(days=1), periods=forecast_days, freq="D"
+    )
 
     # Plot the historic data
-    sns.lineplot(x=x_hist, y=historic_data, ax=ax, label='Historic Data')
+    sns.lineplot(x=x_hist, y=historic_data, ax=ax, label="Historic Data")
 
     # Plot the median simulation
-    sns.lineplot(x=x_sim, y=mid, ax=ax, label='Median Performance')
+    sns.lineplot(x=x_sim, y=mid, ax=ax, label="Median Performance")
 
     # Fill between the low and high percentiles
     ax.fill_between(x=x_sim, y1=low, y2=high, alpha=0.1, color="blue")
@@ -75,3 +83,11 @@ def plot_simulated_balance(ticker: Ticker, start_date: dt.datetime, forecast_day
 
     return fig
 
+
+def plot_correlation_matrix(portfolio: Portfolio):
+    corr_matrix = portfolio.get_corr_matrix()
+    fig = sns.heatmap(
+        corr_matrix,
+        annot=True,
+    )
+    return fig

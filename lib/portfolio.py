@@ -31,7 +31,7 @@ class Portfolio:
     def build_log_returns_df(self):
         data = {}
         for ticker in self.tickers:
-            data[ticker] = ticker.get_log_returns()
+            data[ticker.code] = ticker.get_log_returns()
 
         return pd.DataFrame(data)
 

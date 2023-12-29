@@ -3,5 +3,7 @@ pandas
 scipy
 matplotlib
 seaborn
+plotly
 yfinance
 prettytable
+streamlit
