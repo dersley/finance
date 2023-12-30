@@ -34,10 +34,12 @@ def calculate_lag_correlations(series, max_lag):
         non_directional_correlations[lag] = correlation
 
     # Combining into a DataFrame
-    correlations_df = pd.DataFrame({
-        "Lag": list(range(max_lag + 1)),
-        "Directional": list(directional_correlations.values()),
-        "Non-Directional": list(non_directional_correlations.values())
-    })
+    correlations_df = pd.DataFrame(
+        {
+            "Lag": list(range(max_lag + 1)),
+            "Directional": list(directional_correlations.values()),
+            "Non-Directional": list(non_directional_correlations.values()),
+        }
+    )
 
     return correlations_df

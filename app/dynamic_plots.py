@@ -41,8 +41,25 @@ def plot_returns_fit(ticker: Ticker):
         title=f"Historical Fit of Daily Log Returns: {ticker.code}",
         xaxis_title="Daily Log Returns (Closing Price)",
         yaxis_title="Density",
-        legend_title="Distribution",
+        showlegend=False,
         height=500,
+    )
+
+    return fig
+
+
+def plot_log_returns(ticker: Ticker, start_date: dt.datetime):
+    data = ticker.get_log_returns()
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=data.index, y=data.values, mode="lines", line=dict(color="dodgerblue")
+        )
+    )
+
+    fig.update_layout(
+        title="Daily Log Returns", xaxis_title="", yaxis_title="", height=500
     )
 
     return fig
@@ -63,6 +80,7 @@ def plot_simulated_balance(
     # Simulate the future data
     simdata = ticker.simulate_returns(forecast_days, starting_balance, sims=sims)
     low, mid, high = help.calculate_percentiles(simdata, confidence=95, axis=0)
+    bq, _, uq = help.calculate_percentiles(simdata, confidence=50, axis=0)
 
     # Create a continuous x-axis date range
     x_hist = historic_data.index
@@ -88,17 +106,19 @@ def plot_simulated_balance(
     fig.add_trace(
         go.Scatter(
             x=list(x_sim) + list(x_sim)[::-1],
+            y=list(bq) + list(uq)[::-1],
+            fill="toself",
+            name="50% CI",
+            marker=dict(color="lime"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=list(x_sim) + list(x_sim)[::-1],
             y=list(low) + list(high)[::-1],
             fill="toself",
             name="95% CI",
             marker=dict(color="lightgreen"),
-        )
-    )
-
-    # Plot the median simulation
-    fig.add_trace(
-        go.Scatter(
-            x=x_sim, y=mid, mode="lines", name="Median", marker=dict(color="lime")
         )
     )
 
@@ -121,7 +141,7 @@ def plot_ticker_autocorrelation(ticker: Ticker, max_lag=60):
         go.Scatter(
             x=df["Lag"],
             y=df["Directional"],
-            mode="lines+markers",
+            mode="lines",
             line=dict(color="Lime"),
             name="Directional",
         )
@@ -130,7 +150,7 @@ def plot_ticker_autocorrelation(ticker: Ticker, max_lag=60):
         go.Scatter(
             x=df["Lag"],
             y=df["Non-Directional"],
-            mode="lines+markers",
+            mode="lines",
             line=dict(color="Orange"),
             name="Non-Directional",
         )
