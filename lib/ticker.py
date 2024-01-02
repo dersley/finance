@@ -64,6 +64,21 @@ class Ticker:
         correlations = sim.calculate_lag_correlations(log_returns, max_lag=max_lag)
         return correlations
 
+    def get_estimated_annualized_returns(self):
+        return self.dist.kwds["loc"] * 252
+
+    def get_estimated_annualized_volatility(self):
+        nu = self.dist.kwds["df"]
+        sigma = self.dist.kwds["scale"]
+        daily_volatility = (nu / (nu - 2)) * sigma**2
+        return daily_volatility * np.sqrt(252)
+
+    def get_annualized_return_dist(self):
+        samples = self.dist.rvs(size=(252, 10_000))
+        annualized_samples = np.sum(samples, axis=0)
+        dist = fit.fit_student_t(annualized_samples)
+        return dist
+
     def simulate_returns(self, days: int, starting_balance: float, sims=1000):
         """
         Simulate returns for a given number of days from a starting balance

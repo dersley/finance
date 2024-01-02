@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats as stats
 
 
-def simulate_correlated_uniform_samples(num_elements: int, corr_matrix, sims=10_000):
+def simulate_correlated_uniform_samples(num_elements: int, corr_matrix, sims=1000):
     means = np.zeros(num_elements)
     mvn_samples = np.random.multivariate_normal(means, cov=corr_matrix, size=sims)
     uniform_samples = stats.norm.cdf(mvn_samples)
@@ -43,3 +43,9 @@ def calculate_lag_correlations(series, max_lag):
     )
 
     return correlations_df
+
+
+def generate_random_weights(num_securities, sims=1000):
+    # Generate random weights using the Dirichlet distribution
+    weights = np.random.dirichlet(alpha=np.ones(num_securities), size=sims)
+    return weights

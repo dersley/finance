@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 
 from lib.ticker import Ticker
-from lib.utils import fitting as fit, helper as help
+from lib.portfolio import Portfolio
+from lib.utils import fitting as fit, helper as help, time
 
 
 def plot_returns_fit(ticker: Ticker):
@@ -38,7 +39,7 @@ def plot_returns_fit(ticker: Ticker):
 
     # Update the layout
     fig.update_layout(
-        title=f"Historical Fit of Daily Log Returns: {ticker.code}",
+        title="Historical Fit of Daily Log Returns",
         xaxis_title="Daily Log Returns (Closing Price)",
         yaxis_title="Density",
         showlegend=False,
@@ -124,7 +125,7 @@ def plot_simulated_balance(
 
     # Update the layout
     fig.update_layout(
-        title=f"Simulated and Historic Asset Performance: {ticker.code}",
+        title="Simulated and Historic Asset Performance",
         xaxis_title="",
         yaxis_title="Balance $AUD",
         height=600,
@@ -158,8 +159,119 @@ def plot_ticker_autocorrelation(ticker: Ticker, max_lag=60):
     fig.update_layout(
         xaxis_title="Lag (Days)",
         yaxis_title="Correlation Coefficient",
-        title=f"Lag-wise Correlation: {ticker.code}",
+        title="Lag-wise Correlation",
         height=500,
+        legend=dict(
+            x=1,
+            y=0.95,
+            xanchor="right",
+            yanchor="top",
+        ),
+    )
+
+    return fig
+
+
+def plot_simulated_portfolio(portfolio: Portfolio, forecast_days: int, sims=1000):
+    simdata = portfolio.simulate_portfolio(days=forecast_days, sims=sims)
+    date_range = time.create_date_range(dt.datetime.today(), forecast_days + 1)
+
+    low, mid, high = help.calculate_percentiles(simdata, axis=0, confidence=95)
+    bq, _, uq = help.calculate_percentiles(simdata, axis=0, confidence=50)
+
+    fig = go.Figure()
+
+    # Fill between the low and high percentiles
+    fig.add_trace(
+        go.Scatter(
+            x=list(date_range) + list(date_range)[::-1],
+            y=list(low) + list(high)[::-1],
+            fill="toself",
+            name="95% CI",
+            marker=dict(color="lightgreen"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=list(date_range) + list(date_range)[::-1],
+            y=list(bq) + list(uq)[::-1],
+            fill="toself",
+            name="50% CI",
+            marker=dict(color="lime"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=date_range,
+            y=mid,
+            name="Median",
+            mode="lines",
+            line=dict(color="dodgerblue"),
+        )
+    )
+
+    # Update the layout
+    fig.update_layout(
+        title="Portfolio Performance",
+        xaxis_title="",
+        yaxis_title="Balance ($AUD)",
+        showlegend=False,
+        height=600,
+    )
+
+    return fig
+
+
+def plot_portfolio_corr_heatmap(portfolio):
+    corr_matrix = portfolio.get_corr_matrix()
+
+    text_annotations = [[f"{value:.2f}" for value in row] for row in corr_matrix.values]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Heatmap(
+            z=corr_matrix,  # Correlation data
+            x=corr_matrix.columns,  # X labels
+            y=corr_matrix.index,  # Y labels
+            zmin=-1,
+            zmax=1,
+            colorscale="Spectral",  # Color scale
+            text=text_annotations,
+            texttemplate="%{text}",
+            hovertemplate="X: %{x}<br>Y: %{y}<extra></extra>",
+        )
+    )
+
+    fig.update_layout(title="Portfolio Correlation Matrix", height=600)
+
+    return fig
+
+
+def plot_portfolio_optimization(portfolio, mean_returns, volatility):
+    risk_free_rate = help.calculate_risk_free_rate()
+    sharpe_ratio = help.calculate_sharpe_ratio(mean_returns, volatility)
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=volatility,
+            y=mean_returns,
+            mode="markers",
+            marker=dict(
+                color=sharpe_ratio,
+                colorbar=dict(title="Sharpe Ratio"),
+                colorscale="viridis",
+            ),
+        )
+    )
+
+    fig.add_hline(y=risk_free_rate, line_dash="dash", line_color="blue")
+    fig.update_xaxes(range=[0, max(volatility) * 1.1])
+    fig.update_yaxes(range=[0, max(mean_returns) * 1.1])
+    fig.update_layout(
+        title="Portfolio Optimization",
+        xaxis_title="Volatility",
+        yaxis_title="Mean Returns",
     )
 
     return fig
