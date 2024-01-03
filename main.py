@@ -8,22 +8,38 @@ from lib.portfolio import Portfolio
 
 
 def main():
-    years = 10
+    years = 5
     asx = True
 
     holdings_dict = {
-        "WDS": 100,
         "QUAL": 100,
+        "VAS": 100,
         "CBA": 100,
         "QAN": 333,
+        "BHP": 150,    
+        "WBC": 200,    
+        "NAB": 150,    
+        "ANZ": 120,    
+        "WOW": 80,     
+        "WES": 90,    
+        "TLS": 250,  
+        "CSL": 50,    
+        "MQG": 70,   
+        "RIO": 60,    
     }
 
     portfolio = Portfolio(holdings=holdings_dict, years=years, asx=asx)
-    mean, volatility, weights = portfolio.simulate_portfolio_optimization(
-        portfolios=10_000, sims=1000
+
+    for ticker in portfolio.tickers:
+        print(f"{ticker.code} annualized returns = {ticker.get_estimated_annualized_returns()}")
+        print(f"{ticker.code} annualized volatility = {ticker.get_estimated_annualized_volatility()}")
+        print()
+
+    simulation_df = portfolio.simulate_portfolio_optimization(
+        portfolios=10000, sims=100
     )
 
-    fig = plot.plot_portfolio_optimization(portfolio, mean, volatility)
+    fig = plot.plot_portfolio_optimization(portfolio, simulation_df)
     fig.show()
 
 

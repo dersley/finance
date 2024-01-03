@@ -26,6 +26,7 @@ class Ticker:
         self.yticker = yf.Ticker(ticker=code)
         self.df = self.build_ticker_df()
         self.dist = self.fit_log_returns_dist()
+        self.annualized_dist = self.fit_annualized_return_dist()
 
     def build_ticker_df(self):
         df = self.yticker.history(
@@ -73,11 +74,14 @@ class Ticker:
         daily_volatility = (nu / (nu - 2)) * sigma**2
         return daily_volatility * np.sqrt(252)
 
-    def get_annualized_return_dist(self):
+    def fit_annualized_return_dist(self):
         samples = self.dist.rvs(size=(252, 10_000))
         annualized_samples = np.sum(samples, axis=0)
         dist = fit.fit_student_t(annualized_samples)
         return dist
+
+    def get_annualized_return_dist(self):
+        return self.annualized_dist
 
     def simulate_returns(self, days: int, starting_balance: float, sims=1000):
         """

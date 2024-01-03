@@ -222,9 +222,8 @@ def plot_simulated_portfolio(portfolio: Portfolio, forecast_days: int, sims=1000
     return fig
 
 
-def plot_portfolio_corr_heatmap(portfolio):
+def plot_portfolio_corr_heatmap(portfolio: Portfolio):
     corr_matrix = portfolio.get_corr_matrix()
-
     text_annotations = [[f"{value:.2f}" for value in row] for row in corr_matrix.values]
 
     fig = go.Figure()
@@ -241,33 +240,43 @@ def plot_portfolio_corr_heatmap(portfolio):
             hovertemplate="X: %{x}<br>Y: %{y}<extra></extra>",
         )
     )
-
     fig.update_layout(title="Portfolio Correlation Matrix", height=600)
 
     return fig
 
 
-def plot_portfolio_optimization(portfolio, mean_returns, volatility):
+def plot_portfolio_optimization(portfolio: Portfolio, df):
+    ticker_codes = portfolio.get_ticker_codes()
     risk_free_rate = help.calculate_risk_free_rate()
-    sharpe_ratio = help.calculate_sharpe_ratio(mean_returns, volatility)
+    sharpe_ratio = help.calculate_sharpe_ratio(df["Mean"], df["Volatility"])
+
+    # Create hover text
+    hover_texts = []
+    for index, row in df.iterrows():
+        hover_text = "<br>".join(
+            f"{ticker}: {weight:.2f}" for ticker, weight in zip(ticker_codes, row[ticker_codes])
+        )
+        hover_texts.append(hover_text)
 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=volatility,
-            y=mean_returns,
+            x=df["Volatility"],
+            y=df["Mean"],
             mode="markers",
             marker=dict(
                 color=sharpe_ratio,
                 colorbar=dict(title="Sharpe Ratio"),
                 colorscale="viridis",
             ),
+            hoverinfo='text',
+            text=hover_texts
         )
     )
 
     fig.add_hline(y=risk_free_rate, line_dash="dash", line_color="blue")
-    fig.update_xaxes(range=[0, max(volatility) * 1.1])
-    fig.update_yaxes(range=[0, max(mean_returns) * 1.1])
+    fig.update_xaxes(range=[0, max(df["Volatility"]) * 1.1])
+    fig.update_yaxes(range=[0, max(df["Mean"]) * 1.1])
     fig.update_layout(
         title="Portfolio Optimization",
         xaxis_title="Volatility",
