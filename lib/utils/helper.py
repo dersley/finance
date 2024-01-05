@@ -34,9 +34,9 @@ def calculate_percentiles(data, axis=0, confidence=95):
 
 def calculate_risk_free_rate():
     """Estimate a risk free rate of return using 13 week US treasury bonds"""
-    data = yf.download("IRX")
+    data = yf.download("^IRX")
     current_yield = data["Close"].iloc[-1]
-    return current_yield
+    return current_yield / 100
 
 
 def calculate_sharpe_ratio(

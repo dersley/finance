@@ -71,7 +71,7 @@ class Ticker:
     def get_estimated_annualized_volatility(self):
         nu = self.dist.kwds["df"]
         sigma = self.dist.kwds["scale"]
-        daily_volatility = (nu / (nu - 2)) * sigma**2
+        daily_volatility = np.sqrt((nu / (nu - 2)) * sigma**2)
         return daily_volatility * np.sqrt(252)
 
     def fit_annualized_return_dist(self):

@@ -245,17 +245,21 @@ def plot_portfolio_corr_heatmap(portfolio: Portfolio):
     return fig
 
 
-def plot_portfolio_optimization(portfolio: Portfolio, df):
+def plot_portfolio_optimization(portfolio: Portfolio, sims=25_000):
+    df = portfolio.simulate_portfolio_optimization(sims=sims)
     ticker_codes = portfolio.get_ticker_codes()
     risk_free_rate = help.calculate_risk_free_rate()
     sharpe_ratio = help.calculate_sharpe_ratio(df["Mean"], df["Volatility"])
 
     # Create hover text
     hover_texts = []
-    for index, row in df.iterrows():
+    for i, row in df.iterrows():
         hover_text = "<br>".join(
-            f"{ticker}: {weight:.2f}" for ticker, weight in zip(ticker_codes, row[ticker_codes])
+            f"{ticker}: {weight:.2f}"
+            for ticker, weight in zip(ticker_codes, row[ticker_codes])
         )
+        hover_text += "<br>"
+        hover_text += f"<br>Sharpe Ratio: {sharpe_ratio[i]:.2f}"
         hover_texts.append(hover_text)
 
     fig = go.Figure()
@@ -269,18 +273,18 @@ def plot_portfolio_optimization(portfolio: Portfolio, df):
                 colorbar=dict(title="Sharpe Ratio"),
                 colorscale="viridis",
             ),
-            hoverinfo='text',
-            text=hover_texts
+            hoverinfo="text",
+            text=hover_texts,
         )
     )
 
     fig.add_hline(y=risk_free_rate, line_dash="dash", line_color="blue")
     fig.update_xaxes(range=[0, max(df["Volatility"]) * 1.1])
-    fig.update_yaxes(range=[0, max(df["Mean"]) * 1.1])
     fig.update_layout(
         title="Portfolio Optimization",
         xaxis_title="Volatility",
         yaxis_title="Mean Returns",
+        height=600
     )
 
     return fig

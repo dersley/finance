@@ -71,6 +71,9 @@ class Portfolio:
     def get_corr_matrix(self):
         return self.log_returns_df.corr()
 
+    def get_cov_matrix(self):
+        return self.log_returns_df.cov()
+
     def get_units(self, ticker_code: str):
         return self.holdings[ticker_code]
 
@@ -79,6 +82,18 @@ class Portfolio:
         for ticker in self.tickers:
             dists.append(ticker.get_annualized_return_dist())
         return dists
+
+    def get_annualized_returns(self) -> np.ndarray[float]:
+        returns = []
+        for ticker in self.tickers:
+            returns.append(ticker.get_estimated_annualized_returns())
+        return np.array(returns)
+
+    def get_annualized_volatilities(self) -> np.ndarray[float]:
+        volatilities = []
+        for ticker in self.tickers:
+            volatilities.append(ticker.get_estimated_annualized_returns())
+        return np.array(volatilities)
 
     def simulate_correlated_returns(self, days: int, sims=1000):
         """
@@ -114,16 +129,14 @@ class Portfolio:
         annual_dists = self.annual_dists
 
         uniform_samples = sim.simulate_correlated_uniform_samples(
-                num_elements=num_tickers,
-                corr_matrix=self.get_corr_matrix(),
-                sims=sims
-                )
+            num_elements=num_tickers, corr_matrix=self.get_corr_matrix(), sims=sims
+        )
 
         # Transpose to (num_tickers, sims)
         uniform_samples = uniform_samples.T
 
         for i, ticker in enumerate(self.tickers):
-            log_returns[i, :] = annual_dists[i].ppf(uniform_samples[i, :]) 
+            log_returns[i, :] = annual_dists[i].ppf(uniform_samples[i, :])
 
         return log_returns
 
@@ -155,27 +168,24 @@ class Portfolio:
         # Return the array in shape (sims, days)
         return portfolio_balance.T
 
-    def simulate_portfolio_optimization(
-        self, portfolios=1000, sims=1000
-        ) -> pd.DataFrame: 
-
+    def simulate_portfolio_optimization(self, sims=10_000):
         num_tickers = len(self.tickers)
-        weights = sim.generate_random_weights(num_tickers, sims=portfolios)
-        returns = np.zeros((portfolios, num_tickers, sims))
-        for p in range(portfolios):
-            # Correlated samples with shape (num_tickers, sims)
-            samples = self.simulate_correlated_annualized_returns(sims=sims)
-            for t, ticker in enumerate(self.tickers):
-                weight = weights[p, t]
-                ticker_samples = samples[t]
-                returns[p, t, :] = ticker_samples * weight
+        weights = sim.generate_random_weights(num_tickers, sims=sims)
+        returns = self.get_annualized_returns()
+        volatilities = self.get_annualized_volatilities()
+        corr_matrix = self.get_corr_matrix()
 
-        total_returns = np.sum(returns, axis=1)
-        mean = np.mean(total_returns, axis=1)
-        volatility = np.std(total_returns, axis=1)
-                            
+        # Upscale corr matrix by annualized volatilities
+        cov_matrix = sim.convert_correlation_matrix(corr_matrix.values, volatilities)
+
+        portfolio_simdata = np.zeros((sims, 2))
+        for p in range(sims):
+            portfolio_simdata[p] = sim.calculate_portfolio_performance(
+                returns, weights[p], cov_matrix
+            )
+
         df = pd.DataFrame(weights, columns=self.get_ticker_codes())
-        df['Mean'] = mean
-        df['Volatility'] = volatility
+        df["Mean"] = portfolio_simdata[:, 0]
+        df["Volatility"] = portfolio_simdata[:, 1]
 
         return df
